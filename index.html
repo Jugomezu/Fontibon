@@ -58,18 +58,26 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            width: 220px;
+            width: 156px;
         }
-        #page-credit-box,
-        #page-project-box {
+        #page-logo {
             box-sizing: border-box;
             width: 100%;
+            padding: 8px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.78);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+            backdrop-filter: blur(4px);
+        }
+        #page-credit-box {
+            box-sizing: border-box;
+            width: 100%;
+            padding: 0;
             border-radius: 14px;
             background: rgba(255, 255, 255, 0.82);
             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
             backdrop-filter: blur(4px);
             overflow: hidden;
-            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
         }
         #page-credit-toggle {
             display: flex;
@@ -94,33 +102,30 @@
         #page-credit-box.is-open #page-credit-toggle:after {
             content: "-";
         }
-        #page-credit-text,
-        #page-project-text {
-            color: rgba(17, 40, 59, 0.85);
-            font-size: 11px;
-            line-height: 1.4;
-        }
-        #page-credit-text {
-            display: none;
-            margin: 0;
-            padding: 0 12px 12px 12px;
-        }
-        #page-credit-box.is-open #page-credit-text {
-            display: block;
-        }
-        #page-project-box {
-            padding: 10px 12px;
-        }
-        #page-project-label {
-            margin: 0 0 6px 0;
+        #page-logo-label {
+            margin: 0 0 6px 2px;
             color: rgba(17, 40, 59, 0.85);
             font-family: "Trebuchet MS", "Segoe UI", sans-serif;
             font-size: 12px;
             font-weight: 700;
             letter-spacing: 0.2px;
         }
-        #page-project-text {
+        #page-credit-text {
+            display: none;
             margin: 0;
+            padding: 0 12px 12px 12px;
+            color: rgba(17, 40, 59, 0.85);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 11px;
+            line-height: 1.35;
+        }
+        #page-credit-box.is-open #page-credit-text {
+            display: block;
+        }
+        #page-logo img {
+            display: block;
+            width: 140px;
+            height: auto;
         }
         @media (max-width: 700px) {
             #map-title {
@@ -131,7 +136,7 @@
             #page-card-stack {
                 left: 12px;
                 bottom: 12px;
-                width: min(220px, calc(100vw - 24px));
+                width: 156px;
             }
         }
         </style>
@@ -142,11 +147,11 @@
         <div id="page-card-stack">
             <div id="page-credit-box">
                 <button id="page-credit-toggle" type="button">Informacion de autoria</button>
-                <div id="page-credit-text">Geoprocesamiento y visualizaciones:<br>Juan P. Gomez<br>jugomezuri@gmail.com<br><br>Base de diseno adaptada desde el proyecto Map.</div>
+                <div id="page-credit-text">Geoprocesamiento y visualizaciones:<br>Juan P. Gomez<br>jugomezuri@gmail.com</div>
             </div>
-            <div id="page-project-box">
-                <div id="page-project-label">Proyecto</div>
-                <div id="page-project-text">Fontibon<br>Predios, actuaciones estrategicas, retiros y altura aerocivil.</div>
+            <div id="page-logo">
+                <div id="page-logo-label">Solicitado por:</div>
+                <img src="images/optimizacion-predios-sas.png" alt="Optimizacion de predios SAS">
             </div>
         </div>
         <div id="map">
