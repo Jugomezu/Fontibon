@@ -19,10 +19,136 @@
             padding: 0;
             margin: 0;
         }
+        #map {
+            background: radial-gradient(circle at 15% 20%, #d4e6f1 0%, #b9d6e8 35%, #98bdd5 100%);
+        }
+        #map-title {
+            position: absolute;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1200;
+            padding: 10px 18px;
+            border-radius: 12px;
+            background: rgba(15, 37, 56, 0.78);
+            color: #f4fbff;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            backdrop-filter: blur(4px);
+            pointer-events: none;
+        }
+        .leaflet-control-layers,
+        .leaflet-bar {
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.24) !important;
+            border-radius: 10px !important;
+            overflow: hidden;
+        }
+        .leaflet-control-layers-expanded {
+            background: rgba(255, 255, 255, 0.94) !important;
+        }
+        #page-card-stack {
+            position: absolute;
+            left: 18px;
+            bottom: 18px;
+            z-index: 1200;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 220px;
+        }
+        #page-credit-box,
+        #page-project-box {
+            box-sizing: border-box;
+            width: 100%;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.82);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+            backdrop-filter: blur(4px);
+            overflow: hidden;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+        }
+        #page-credit-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            padding: 10px 12px;
+            border: 0;
+            background: transparent;
+            color: rgba(17, 40, 59, 0.92);
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            cursor: pointer;
+            text-align: left;
+        }
+        #page-credit-toggle:after {
+            content: "+";
+            font-size: 16px;
+            line-height: 1;
+        }
+        #page-credit-box.is-open #page-credit-toggle:after {
+            content: "-";
+        }
+        #page-credit-text,
+        #page-project-text {
+            color: rgba(17, 40, 59, 0.85);
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        #page-credit-text {
+            display: none;
+            margin: 0;
+            padding: 0 12px 12px 12px;
+        }
+        #page-credit-box.is-open #page-credit-text {
+            display: block;
+        }
+        #page-project-box {
+            padding: 10px 12px;
+        }
+        #page-project-label {
+            margin: 0 0 6px 0;
+            color: rgba(17, 40, 59, 0.85);
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+        #page-project-text {
+            margin: 0;
+        }
+        @media (max-width: 700px) {
+            #map-title {
+                font-size: 16px;
+                top: 10px;
+                padding: 8px 12px;
+            }
+            #page-card-stack {
+                left: 12px;
+                bottom: 12px;
+                width: min(220px, calc(100vw - 24px));
+            }
+        }
         </style>
         <title></title>
     </head>
     <body>
+        <div id="map-title">Mapa informativo Fontibon</div>
+        <div id="page-card-stack">
+            <div id="page-credit-box">
+                <button id="page-credit-toggle" type="button">Informacion de autoria</button>
+                <div id="page-credit-text">Geoprocesamiento y visualizaciones:<br>Juan P. Gomez<br>jugomezuri@gmail.com<br><br>Base de diseno adaptada desde el proyecto Map.</div>
+            </div>
+            <div id="page-project-box">
+                <div id="page-project-label">Proyecto</div>
+                <div id="page-project-text">Fontibon<br>Predios, actuaciones estrategicas, retiros y altura aerocivil.</div>
+            </div>
+        </div>
         <div id="map">
         </div>
         <script src="js/qgis2web_expressions.js"></script>
@@ -49,7 +175,7 @@
         <script>
         var map = L.map('map', {
             zoomControl:false, maxZoom:28, minZoom:1
-        }).fitBounds([[4.690855367677363,-74.11082586078707],[4.715898080365809,-74.07197974161677]]);
+        });
         var hash = new L.Hash(map);
         map.attributionControl.setPrefix('<a href="https://github.com/tomchadwin/qgis2web" target="_blank">qgis2web</a> &middot; <a href="https://leafletjs.com" title="A JS library for interactive maps">Leaflet</a> &middot; <a href="https://qgis.org">QGIS</a>');
         var autolinker = new Autolinker({truncate: {length: 30, location: 'smart'}});
@@ -114,6 +240,13 @@
                 popup._contentNode.classList.remove('media');
             }
         }
+        function getActuacionesDisplayName(feature) {
+            var context = {
+                feature: feature,
+                variables: {}
+            };
+            return exp_ActuacionesEstrategicas_4rule0_eval_expression(context) ? 'Fontibon' : 'Otras';
+        }
         var zoomControl = L.control.zoom({
             position: 'topleft'
         }).addTo(map);
@@ -174,14 +307,14 @@
         function style_Altura0Aerocivil_3_0() {
             return {
                 pane: 'pane_Altura0Aerocivil_3',
-                opacity: 1,
+                opacity: 0.1,
                 color: 'rgba(35,35,35,1.0)',
                 dashArray: '',
                 lineCap: 'butt',
                 lineJoin: 'miter',
                 weight: 1.0, 
                 fill: true,
-                fillOpacity: 1,
+                fillOpacity: 0.1,
                 fillColor: 'rgba(190,207,80,1.0)',
                 interactive: true,
             }
@@ -199,9 +332,12 @@
             style: style_Altura0Aerocivil_3_0,
         });
         bounds_group.addLayer(layer_Altura0Aerocivil_3);
-        map.addLayer(layer_Altura0Aerocivil_3);
         function pop_ActuacionesEstrategicas_4(feature, layer) {
             var popupContent = '<table>\
+                    <tr>\
+                        <th scope="row">Sector</th>\
+                        <td>' + getActuacionesDisplayName(feature) + '</td>\
+                    </tr>\
                 </table>';
             var content = removeEmptyRowsFromPopupContent(popupContent, feature);
 			layer.on('popupopen', function(e) {
@@ -575,19 +711,22 @@
         });
         bounds_group.addLayer(layer_ViaProyectadaCra97_12);
         map.addLayer(layer_ViaProyectadaCra97_12);
+        var prediosBoundsGroup = L.featureGroup([layer_1_11, layer_2_10, layer_3_9, layer_4_8, layer_5_7]);
+        if (prediosBoundsGroup.getBounds().isValid()) {
+            map.fitBounds(prediosBoundsGroup.getBounds(), {padding: [24, 24]});
+        }
         var overlaysTree = [
             {label: '<img src="legend/ViaProyectadaCra97_12.png" /> Via Proyectada Cra. 97.', layer: layer_ViaProyectadaCra97_12},
-        {label: '<b>sub-group1</b>',  selectAllCheckbox: true, children: [
+            {label: '<img src="legend/Retiros_6.png" /> Retiros', layer: layer_Retiros_6},
+        {label: '<b>Predios</b>',  selectAllCheckbox: true, children: [
             {label: '<img src="legend/1_11.png" /> 1', layer: layer_1_11},
             {label: '<img src="legend/2_10.png" /> 2', layer: layer_2_10},
-            {label: '<img src="legend/3_9.png" /> 3', layer: layer_3_9},]},
-        {label: '<b>Predios</b>',  selectAllCheckbox: true, children: [
+            {label: '<img src="legend/3_9.png" /> 3', layer: layer_3_9},
             {label: '<img src="legend/4_8.png" /> 4', layer: layer_4_8},
             {label: '<img src="legend/5_7.png" /> 5', layer: layer_5_7},]},
-            {label: '<img src="legend/Retiros_6.png" /> Retiros', layer: layer_Retiros_6},
-            {label: "Topo14_706207", layer: layer_Topo14_706207_5},
-            {label: 'ActuacionesEstrategicas<br /><table><tr><td style="text-align: center;"><img src="legend/ActuacionesEstrategicas_4_0.png" /></td><td></td></tr><tr><td style="text-align: center;"><img src="legend/ActuacionesEstrategicas_4_1.png" /></td><td></td></tr></table>', layer: layer_ActuacionesEstrategicas_4},
             {label: '<img src="legend/Altura0Aerocivil_3.png" /> Altura 0 Aerocivil', layer: layer_Altura0Aerocivil_3},
+            {label: "Topo14_706207", layer: layer_Topo14_706207_5},
+            {label: 'Actuaciones Estrategicas<br /><table><tr><td style="text-align: center;"><img src="legend/ActuacionesEstrategicas_4_0.png" /></td><td>Fontibon</td></tr><tr><td style="text-align: center;"><img src="legend/ActuacionesEstrategicas_4_1.png" /></td><td>Otras</td></tr></table>', layer: layer_ActuacionesEstrategicas_4},
             {label: "UPL", layer: layer_UPL_2},
             {label: "mapa_alturas_aerocivil_hh", layer: layer_mapa_alturas_aerocivil_hh_1},
             {label: "Google satelite", layer: layer_Googlesatelite_0},]
@@ -602,6 +741,13 @@
         });
         lay.addTo(map);
 		document.addEventListener("DOMContentLoaded", function() {
+            var creditBoxElement = document.getElementById('page-credit-box');
+            var creditToggleElement = document.getElementById('page-credit-toggle');
+            if (creditBoxElement && creditToggleElement) {
+                creditToggleElement.addEventListener('click', function() {
+                    creditBoxElement.classList.toggle('is-open');
+                });
+            }
             // set new Layers List height which considers toggle icon
             function newLayersListHeight() {
                 var layerScrollbarElement = document.querySelector('.leaflet-control-layers-scrollbar');
@@ -654,11 +800,8 @@
         setBounds();
         var i = 0;
         layer_ActuacionesEstrategicas_4.eachLayer(function(layer) {
-            var context = {
-                feature: layer.feature,
-                variables: {}
-            };
-            layer.bindTooltip((layer.feature.properties['Nombre'] !== null?String('<div style="color: #323232; font-size: 10pt; font-family: \'Arial\', sans-serif;">' + layer.feature.properties['Nombre']) + '</div>':''), {permanent: true, offset: [-0, -16], className: 'css_ActuacionesEstrategicas_4'});
+            var actuacionesName = getActuacionesDisplayName(layer.feature);
+            layer.bindTooltip(String('<div style="color: #323232; font-size: 10pt; font-family: \'Arial\', sans-serif;">' + actuacionesName + '</div>'), {permanent: true, offset: [-0, -16], className: 'css_ActuacionesEstrategicas_4'});
             labels.push(layer);
             totalMarkers += 1;
               layer.added = true;
