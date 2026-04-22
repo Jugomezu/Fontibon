@@ -177,6 +177,7 @@
         <script src="data/2_10.js"></script>
         <script src="data/1_11.js"></script>
         <script src="data/ViaProyectadaCra97_12.js"></script>
+        <script src="data/ExpansionViaAtras_13.js"></script>
         <script>
         var map = L.map('map', {
             zoomControl:false, maxZoom:28, minZoom:1
@@ -730,12 +731,55 @@
         });
         bounds_group.addLayer(layer_ViaProyectadaCra97_12);
         map.addLayer(layer_ViaProyectadaCra97_12);
+        function pop_ExpansionViaAtras_13(feature, layer) {
+            var popupContent = '<table>\
+                    <tr>\
+                        <td colspan="2">' + (feature.properties['id'] !== null ? autolinker.link(String(feature.properties['id']).replace(/'/g, '\'').toLocaleString()) : '') + '</td>\
+                    </tr>\
+                </table>';
+            var content = removeEmptyRowsFromPopupContent(popupContent, feature);
+			layer.on('popupopen', function(e) {
+				addClassToPopupIfMedia(content, e.popup);
+			});
+			layer.bindPopup(content, { maxHeight: 400 });
+        }
+
+        function style_ExpansionViaAtras_13_0() {
+            return {
+                pane: 'pane_ExpansionViaAtras_13',
+                opacity: 1,
+                color: 'rgba(237,81,43,1.0)',
+                dashArray: '',
+                lineCap: 'square',
+                lineJoin: 'bevel',
+                weight: 2.0,
+                fillOpacity: 0,
+                interactive: true,
+            }
+        }
+        map.createPane('pane_ExpansionViaAtras_13');
+        map.getPane('pane_ExpansionViaAtras_13').style.zIndex = 416;
+        map.getPane('pane_ExpansionViaAtras_13').style['mix-blend-mode'] = 'normal';
+        var layer_ExpansionViaAtras_13 = new L.geoJson(json_ExpansionViaAtras_13, {
+            attribution: '',
+            interactive: true,
+            dataVar: 'json_ExpansionViaAtras_13',
+            layerName: 'layer_ExpansionViaAtras_13',
+            pane: 'pane_ExpansionViaAtras_13',
+            onEachFeature: pop_ExpansionViaAtras_13,
+            style: style_ExpansionViaAtras_13_0,
+        });
+        bounds_group.addLayer(layer_ExpansionViaAtras_13);
+        map.addLayer(layer_ExpansionViaAtras_13);
         var prediosBoundsGroup = L.featureGroup([layer_1_11, layer_2_10, layer_3_9, layer_4_8, layer_5_7]);
         if (prediosBoundsGroup.getBounds().isValid()) {
             map.fitBounds(prediosBoundsGroup.getBounds(), {padding: [24, 24]});
         }
         var overlaysTree = [
-            {label: '<img src="legend/ViaProyectadaCra97_12.png" /> Via Proyectada Cra. 97.', layer: layer_ViaProyectadaCra97_12},
+            {label: 'Vias', collapsed: true, selectAllCheckbox: 'Activar/Desactivar todos', children: [
+                {label: '<img src="legend/ViaProyectadaCra97_12.png" /> Via Proyectada Cra. 97.', layer: layer_ViaProyectadaCra97_12},
+                {label: '<span style="display:inline-block;width:12px;height:3px;background:#ed512b;vertical-align:middle;margin-right:4px;"></span> Expansion via atras', layer: layer_ExpansionViaAtras_13},
+            ]},
             {label: '<img src="legend/Retiros_6.png" /> Retiros', layer: layer_Retiros_6},
         {label: '<b>Predios</b>',  selectAllCheckbox: true, children: [
             {label: '<img src="legend/1_11.png" /> 1', layer: layer_1_11},
