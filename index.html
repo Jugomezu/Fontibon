@@ -139,6 +139,57 @@
                 width: 156px;
             }
         }
+        .transit-tooltip {
+            padding: 3px 8px;
+            border: 0;
+            border-radius: 6px;
+            background: rgba(15, 37, 56, 0.86);
+            color: #f4fbff;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+        }
+        .transit-tooltip:before {
+            display: none;
+        }
+        .station-pointer {
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 900;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            line-height: 1.2;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+        .station-pointer svg {
+            display: block;
+            overflow: visible;
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+            transition: transform 0.08s linear;
+        }
+        .station-pointer:hover svg {
+            filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45)) brightness(1.2);
+        }
+        .station-pointer-label {
+            /* white halo keeps the label legible over imagery and plans */
+            text-shadow: -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff,
+                0 0 3px #fff, 0 0 5px #fff;
+        }
+        .transit-swatch {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 4px;
+        }
         </style>
         <title></title>
     </head>
@@ -178,6 +229,10 @@
         <script src="data/1_11.js"></script>
         <script src="data/ViaProyectadaCra97_12.js"></script>
         <script src="data/ExpansionViaAtras_13.js"></script>
+        <script src="data/MetroL2_16.js"></script>
+        <script src="data/MetroL2Estaciones_17.js"></script>
+        <script src="data/RegioTramOccidente_18.js"></script>
+        <script src="data/RegioTramOccidenteEstaciones_20.js"></script>
         <script>
         var map = L.map('map', {
             zoomControl:false, maxZoom:28, minZoom:1
@@ -771,11 +826,75 @@
         });
         bounds_group.addLayer(layer_ExpansionViaAtras_13);
         map.addLayer(layer_ExpansionViaAtras_13);
+        // Transporte ferreo: Metro de Bogota y RegioTram
+        map.createPane('pane_Transporte_lineas');
+        map.getPane('pane_Transporte_lineas').style.zIndex = 417;
+        map.createPane('pane_Transporte_estaciones');
+        map.getPane('pane_Transporte_estaciones').style.zIndex = 418;
+        function pop_Transporte(feature, layer) {
+            var rows = '';
+            for (var key in feature.properties) {
+                var value = feature.properties[key];
+                if (value === null || String(value).trim() === '') continue;
+                rows += '<tr><th scope="row">' + key + '</th><td>' + value + '</td></tr>';
+            }
+            layer.bindPopup('<table>' + rows + '</table>', { maxHeight: 400 });
+        }
+        // Each stroke spec draws one pass of the same line; the last pass carries the popup.
+        function transitLineLayers(data, strokes) {
+            return strokes.map(function(stroke, index) {
+                var isTop = index === strokes.length - 1;
+                return L.geoJson(data, {
+                    pane: 'pane_Transporte_lineas',
+                    interactive: isTop,
+                    onEachFeature: isTop ? pop_Transporte : null,
+                    style: function() {
+                        return L.extend({lineCap: 'round', lineJoin: 'round', opacity: 1}, stroke);
+                    }
+                });
+            });
+        }
+        function transitStationsLayer(data, color) {
+            return L.geoJson(data, {
+                pointToLayer: function(feature, latlng) {
+                    return L.circleMarker(latlng, {
+                        pane: 'pane_Transporte_estaciones',
+                        radius: 5,
+                        color: color,
+                        weight: 2.5,
+                        fillColor: '#ffffff',
+                        fillOpacity: 1
+                    });
+                },
+                onEachFeature: function(feature, layer) {
+                    pop_Transporte(feature, layer);
+                    layer.bindTooltip(feature.properties['Estación'], {direction: 'top', offset: [0, -6], className: 'transit-tooltip'});
+                }
+            });
+        }
+        var layer_MetroL2_16 = L.featureGroup(transitLineLayers(json_MetroL2_16, [
+            {color: '#ffffff', weight: 8},
+            {color: '#0a5cad', weight: 4.5, dashArray: '10 7', lineCap: 'butt'}
+        ]).concat([transitStationsLayer(json_MetroL2Estaciones_17, '#0a5cad')]));
+        bounds_group.addLayer(layer_MetroL2_16);
+        map.addLayer(layer_MetroL2_16);
+        // RegioTram de Occidente: railway symbology (white halo, green bed, white sleepers)
+        var layer_RegioTramOccidente_18 = L.featureGroup(transitLineLayers(json_RegioTramOccidente_18, [
+            {color: '#ffffff', weight: 10, opacity: 0.9},
+            {color: '#1b6b36', weight: 7},
+            {color: '#ffffff', weight: 2.5, dashArray: '9 9', lineCap: 'butt'}
+        ]).concat([transitStationsLayer(json_RegioTramOccidenteEstaciones_20, '#1b6b36')]));
+        bounds_group.addLayer(layer_RegioTramOccidente_18);
+        map.addLayer(layer_RegioTramOccidente_18);
         var prediosBoundsGroup = L.featureGroup([layer_1_11, layer_2_10, layer_3_9, layer_4_8, layer_5_7]);
         if (prediosBoundsGroup.getBounds().isValid()) {
             map.fitBounds(prediosBoundsGroup.getBounds(), {padding: [24, 24]});
         }
         var overlaysTree = [
+            {label: 'Transporte ferreo', collapsed: false, selectAllCheckbox: 'Activar/Desactivar todos', children: [
+                {label: '<svg class="transit-swatch" width="26" height="12"><line x1="3" y1="6" x2="23" y2="6" stroke="#bbb" stroke-width="9" stroke-linecap="round"/><line x1="3" y1="6" x2="23" y2="6" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="3" y1="6" x2="23" y2="6" stroke="#0a5cad" stroke-width="4" stroke-dasharray="6 3"/><circle cx="13" cy="6" r="3.2" fill="#fff" stroke="#0a5cad" stroke-width="2"/></svg> Metro Linea 2 (proyectada)', layer: layer_MetroL2_16},
+                {label: '<svg class="transit-swatch" width="26" height="12"><line x1="2" y1="6" x2="24" y2="6" stroke="#1b6b36" stroke-width="7"/><line x1="2" y1="6" x2="24" y2="6" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 4"/><circle cx="13" cy="6" r="3.2" fill="#fff" stroke="#1b6b36" stroke-width="2"/></svg> RegioTram de Occidente (en construccion)', layer: layer_RegioTramOccidente_18},
+            ]},
             {label: 'Vias', collapsed: true, selectAllCheckbox: 'Activar/Desactivar todos', children: [
                 {label: '<img src="legend/ViaProyectadaCra97_12.png" /> Via Proyectada Cra. 97.', layer: layer_ViaProyectadaCra97_12},
                 {label: '<span style="display:inline-block;width:12px;height:3px;background:#ed512b;vertical-align:middle;margin-right:4px;"></span> Expansion via atras', layer: layer_ExpansionViaAtras_13},
@@ -805,6 +924,112 @@
             collapsed: false, 
         });
         lay.addTo(map);
+        // Edge arrows pointing to the stations nearest the main lot (lote 5), shown only while the station is off screen
+        var mainLotCenter = layer_5_7.getBounds().getCenter();
+        function nearestStation(data) {
+            var best = null;
+            data.features.forEach(function(feature) {
+                var coords = feature.geometry.coordinates;
+                var latlng = L.latLng(coords[1], coords[0]);
+                var distance = map.distance(mainLotCenter, latlng);
+                if (!best || distance < best.distance) {
+                    best = {feature: feature, latlng: latlng, distance: distance};
+                }
+            });
+            return best;
+        }
+        function findStationMarker(group, feature) {
+            var found = null;
+            group.eachLayer(function sweep(layer) {
+                if (found) return;
+                if (layer.feature === feature && layer.getLatLng) found = layer;
+                else if (layer.eachLayer) layer.eachLayer(sweep);
+            });
+            return found;
+        }
+        var stationPointers = [
+            {mode: 'RegioTram Occidente', color: '#1b6b36', shade: '#0f4221', group: layer_RegioTramOccidente_18, station: nearestStation(json_RegioTramOccidenteEstaciones_20)},
+            {mode: 'Metro L2', color: '#0a5cad', shade: '#063a6e', group: layer_MetroL2_16, station: nearestStation(json_MetroL2Estaciones_17)}
+        ];
+        stationPointers.forEach(function(pointer) {
+            var km = (pointer.station.distance / 1000).toFixed(1).replace('.', ',');
+            var el = document.createElement('div');
+            el.className = 'station-pointer';
+            el.title = 'Estación ' + pointer.station.feature.properties['Estación'] + ' · ' + km + ' km del lote (clic para ir)';
+            // Tailless, two-tone arrowhead (north-arrow style) with a white outline, drawn pointing right and rotated toward the station
+            el.innerHTML = '<svg width="46" height="46" viewBox="0 0 24 24">' +
+                '<path d="M23 12 L3 2.5 L8.5 12 L3 21.5 Z" fill="#ffffff" stroke="#ffffff" stroke-width="3" stroke-linejoin="round"/>' +
+                '<path d="M23 12 L3 2.5 L8.5 12 Z" fill="' + pointer.color + '" stroke="' + pointer.color + '" stroke-width="0.8" stroke-linejoin="round"/>' +
+                '<path d="M23 12 L8.5 12 L3 21.5 Z" fill="' + pointer.shade + '" stroke="' + pointer.shade + '" stroke-width="0.8" stroke-linejoin="round"/>' +
+                '</svg><span class="station-pointer-label" style="color:' + pointer.color + '">' + pointer.mode + '</span>';
+            L.DomEvent.disableClickPropagation(el);
+            L.DomEvent.disableScrollPropagation(el);
+            el.addEventListener('click', function() {
+                map.flyTo(pointer.station.latlng, Math.max(map.getZoom(), 16));
+                map.once('moveend', function() {
+                    var marker = findStationMarker(pointer.group, pointer.station.feature);
+                    if (marker) marker.openPopup();
+                });
+            });
+            map.getContainer().appendChild(el);
+            pointer.el = el;
+            pointer.arrow = el.querySelector('svg');
+        });
+        function rectsOverlap(a, b) {
+            return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+        }
+        function updateStationPointers() {
+            var container = map.getContainer();
+            var origin = container.getBoundingClientRect();
+            var size = map.getSize();
+            var margin = 10;
+            // Controls and cards the arrows must not cover
+            var obstacles = [];
+            container.querySelectorAll('.leaflet-control').forEach(function(control) {
+                obstacles.push(control.getBoundingClientRect());
+            });
+            ['map-title', 'page-card-stack'].forEach(function(id) {
+                var element = document.getElementById(id);
+                if (element) obstacles.push(element.getBoundingClientRect());
+            });
+            obstacles = obstacles.filter(function(r) { return r.width > 0; }).map(function(r) {
+                return {left: r.left - origin.left - 6, right: r.right - origin.left + 6, top: r.top - origin.top - 6, bottom: r.bottom - origin.top + 6};
+            });
+            function isHidden(x, y) {
+                if (x < 0 || y < 0 || x > size.x || y > size.y) return true;
+                return obstacles.some(function(r) { return x > r.left && x < r.right && y > r.top && y < r.bottom; });
+            }
+            stationPointers.forEach(function(pointer) {
+                var target = map.latLngToContainerPoint(pointer.station.latlng);
+                if (!map.hasLayer(pointer.group) || !isHidden(target.x, target.y)) {
+                    pointer.el.style.display = 'none';
+                    return;
+                }
+                pointer.el.style.display = 'flex';
+                var halfW = pointer.el.offsetWidth / 2;
+                var halfH = pointer.el.offsetHeight / 2;
+                var cx = size.x / 2, cy = size.y / 2;
+                var dx = target.x - cx, dy = target.y - cy;
+                // Largest step along the center->station ray that keeps the pill inside the map
+                var tMax = Math.min(
+                    dx === 0 ? Infinity : Math.abs((cx - halfW - margin) / dx),
+                    dy === 0 ? Infinity : Math.abs((cy - halfH - margin) / dy));
+                var x = cx, y = cy;
+                for (var t = tMax; t > 0; t -= tMax / 60) {
+                    x = cx + dx * t;
+                    y = cy + dy * t;
+                    var box = {left: x - halfW, right: x + halfW, top: y - halfH, bottom: y + halfH};
+                    if (!obstacles.some(function(r) { return rectsOverlap(box, r); })) break;
+                }
+                pointer.el.style.transform = 'translate(' + Math.round(x - halfW) + 'px,' + Math.round(y - halfH) + 'px)';
+                pointer.arrow.style.transform = 'rotate(' + (Math.atan2(dy, dx) * 180 / Math.PI) + 'deg)';
+                // Later pointers steer around earlier ones
+                obstacles.push({left: x - halfW - 6, right: x + halfW + 6, top: y - halfH - 6, bottom: y + halfH + 6});
+            });
+        }
+        map.on('move zoom resize layeradd layerremove', updateStationPointers);
+        map.getContainer().addEventListener('click', function() { setTimeout(updateStationPointers, 50); });
+        setTimeout(updateStationPointers, 100);
 		document.addEventListener("DOMContentLoaded", function() {
             var creditBoxElement = document.getElementById('page-credit-box');
             var creditToggleElement = document.getElementById('page-credit-toggle');
