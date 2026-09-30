@@ -233,6 +233,7 @@
         <script src="data/MetroL2Estaciones_17.js"></script>
         <script src="data/RegioTramOccidente_18.js"></script>
         <script src="data/RegioTramOccidenteEstaciones_20.js"></script>
+        <script src="data/MallaVialProyectada_21.js"></script>
         <script>
         var map = L.map('map', {
             zoomControl:false, maxZoom:28, minZoom:1
@@ -835,7 +836,7 @@
             var rows = '';
             for (var key in feature.properties) {
                 var value = feature.properties[key];
-                if (value === null || String(value).trim() === '') continue;
+                if (key.charAt(0) === '_' || value === null || String(value).trim() === '') continue;
                 rows += '<tr><th scope="row">' + key + '</th><td>' + value + '</td></tr>';
             }
             layer.bindPopup('<table>' + rows + '</table>', { maxHeight: 400 });
@@ -886,6 +887,40 @@
         ]).concat([transitStationsLayer(json_RegioTramOccidenteEstaciones_20, '#1b6b36')]));
         bounds_group.addLayer(layer_RegioTramOccidente_18);
         map.addLayer(layer_RegioTramOccidente_18);
+        // Malla vial arterial proyectada (POT Decreto 555/2021): road reserves not yet fully built, split by status
+        map.createPane('pane_MallaVialProyectada_21');
+        map.getPane('pane_MallaVialProyectada_21').style.zIndex = 416;
+        var roadConstructionPattern = new L.StripePattern({
+            weight: 3,
+            spaceWeight: 4,
+            color: '#d9480f',
+            opacity: 0.75,
+            spaceOpacity: 0,
+            angle: 45
+        });
+        roadConstructionPattern.addTo(map);
+        var roadStatusStyles = {
+            sin_construir: {color: '#c92a2a', weight: 1.6, dashArray: '6 4', fillColor: '#e03131', fillOpacity: 0.3},
+            parcial: {color: '#e67700', weight: 1.2, fillColor: '#f59f00', fillOpacity: 0.3},
+            en_construccion: {color: '#d9480f', weight: 1.6, fillPattern: roadConstructionPattern, fillOpacity: 1}
+        };
+        function roadStatusLayer(category) {
+            return new L.geoJson(json_MallaVialProyectada_21, {
+                pane: 'pane_MallaVialProyectada_21',
+                filter: function(feature) { return feature.properties['_categoria'] === category; },
+                onEachFeature: pop_Transporte,
+                style: function() {
+                    return L.extend({pane: 'pane_MallaVialProyectada_21', opacity: 1, lineJoin: 'round'}, roadStatusStyles[category]);
+                }
+            });
+        }
+        var layer_ViaSinConstruir_21 = roadStatusLayer('sin_construir');
+        var layer_ViaParcial_21 = roadStatusLayer('parcial');
+        var layer_ViaEnConstruccion_21 = roadStatusLayer('en_construccion');
+        [layer_ViaParcial_21, layer_ViaEnConstruccion_21, layer_ViaSinConstruir_21].forEach(function(layer) {
+            bounds_group.addLayer(layer);
+            map.addLayer(layer);
+        });
         var prediosBoundsGroup = L.featureGroup([layer_1_11, layer_2_10, layer_3_9, layer_4_8, layer_5_7]);
         if (prediosBoundsGroup.getBounds().isValid()) {
             map.fitBounds(prediosBoundsGroup.getBounds(), {padding: [24, 24]});
@@ -894,6 +929,11 @@
             {label: 'Transporte ferreo', collapsed: false, selectAllCheckbox: 'Activar/Desactivar todos', children: [
                 {label: '<svg class="transit-swatch" width="26" height="12"><line x1="3" y1="6" x2="23" y2="6" stroke="#bbb" stroke-width="9" stroke-linecap="round"/><line x1="3" y1="6" x2="23" y2="6" stroke="#fff" stroke-width="7" stroke-linecap="round"/><line x1="3" y1="6" x2="23" y2="6" stroke="#0a5cad" stroke-width="4" stroke-dasharray="6 3"/><circle cx="13" cy="6" r="3.2" fill="#fff" stroke="#0a5cad" stroke-width="2"/></svg> Metro Linea 2 (proyectada)', layer: layer_MetroL2_16},
                 {label: '<svg class="transit-swatch" width="26" height="12"><line x1="2" y1="6" x2="24" y2="6" stroke="#1b6b36" stroke-width="7"/><line x1="2" y1="6" x2="24" y2="6" stroke="#fff" stroke-width="2.5" stroke-dasharray="4 4"/><circle cx="13" cy="6" r="3.2" fill="#fff" stroke="#1b6b36" stroke-width="2"/></svg> RegioTram de Occidente (en construccion)', layer: layer_RegioTramOccidente_18},
+            ]},
+            {label: 'Malla vial proyectada (POT 555)', collapsed: false, selectAllCheckbox: 'Activar/Desactivar todos', children: [
+                {label: '<svg class="transit-swatch" width="26" height="12"><rect x="2" y="2" width="22" height="8" fill="rgba(224,49,49,0.3)" stroke="#c92a2a" stroke-width="1.5" stroke-dasharray="4 2.5"/></svg> Sin construir', layer: layer_ViaSinConstruir_21},
+                {label: '<svg class="transit-swatch" width="26" height="12"><defs><pattern id="legendRoadStripes" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="rgba(217,72,15,0.75)"/></pattern></defs><rect x="2" y="2" width="22" height="8" fill="url(#legendRoadStripes)" stroke="#d9480f" stroke-width="1.5"/></svg> En construccion', layer: layer_ViaEnConstruccion_21},
+                {label: '<svg class="transit-swatch" width="26" height="12"><rect x="2" y="2" width="22" height="8" fill="rgba(245,159,0,0.3)" stroke="#e67700" stroke-width="1.2"/></svg> Parcialmente construida', layer: layer_ViaParcial_21},
             ]},
             {label: 'Vias', collapsed: true, selectAllCheckbox: 'Activar/Desactivar todos', children: [
                 {label: '<img src="legend/ViaProyectadaCra97_12.png" /> Via Proyectada Cra. 97.', layer: layer_ViaProyectadaCra97_12},
